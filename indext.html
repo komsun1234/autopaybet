@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autoplay.bet - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Kanit', sans-serif; }
+        .sidebar-transition { transition: transform 0.3s ease-in-out; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .bank-logo { width: 40px; height: 40px; object-fit: contain; border-radius: 8px; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-shadow { box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            .sidebar-mobile { transform: translateX(-100%); }
+            .sidebar-mobile.active { transform: translateX(0); }
+            .main-content-mobile { margin-left: 0 !important; }
+            .bank-logo { width: 30px; height: 30px; }
+            .mobile-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .mobile-header { padding: 1rem !important; }
+            .mobile-card { margin: 0.5rem !important; padding: 1rem !important; }
+            .mobile-text { font-size: 0.875rem; }
+            .mobile-button { padding: 0.5rem 1rem; font-size: 0.875rem; }
+        }
+        
+        /* Modern Download Animation */
+        .download-progress {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+        }
+        
+        .download-progress::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: downloadShine 2s infinite;
+        }
+        
+        @keyframes downloadShine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        .download-icon {
+            animation: downloadBounce 1s infinite;
+        }
+        
+        @keyframes downloadBounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        
+        .progress-bar {
+            width: 0%;
+            height: 4px;
+            background: linear-gradient(90deg, #4CAF50, #81C784);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+            animation: progressShine 1.5s infinite;
+        }
+        
+        @keyframes progressShine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .success-checkmark {
+            animation: checkmarkPop 0.6s ease-out;
+        }
+        
+        @keyframes checkmarkPop {
+            0% { transform: scale(0) rotate(45deg); }
+            50% { transform: scale(1.2) rotate(45deg); }
+            100% { transform: scale(1) rotate(45deg); }
+        }
+        
+        .pulse-ring {
+            animation: pulseRing 2s infinite;
+        }
+        
+        @keyframes pulseRing {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 w-96 card-shadow fade-in">
+            <div class="text-center mb-8">
+                <div class="mb-4">
+                    <img src="https://img5.pic.in.th/file/secure-sv1/autoplaybet.jpeg" alt="Autoplay.bet Logo" class="w-32 h-32 mx-auto rounded-2xl shadow-lg mb-4 object-cover">
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800">เข้าสู่ระบบ</h2>
+                <p class="text-gray-600 mt-2">ระบบจัดการหลังบ้าน Autoplay.bet</p>
+            </div>
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อผู้ใช้</label>
+                    <input type="text" id="username" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
+                    <input type="password" id="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <button type="submit" class="w-full gradient-bg text-white py-3 rounded-lg font-medium hover:opacity-90 transition-opacity">
+                    <i class="fas fa-sign-in-alt mr-2"></i>เข้าสู่ระบบ
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="hidden">
+        <!-- Mobile Menu Button -->
+        <button id="mobileMenuBtn" class="fixed top-4 left-4 z-50 md:hidden bg-blue-500 text-white p-3 rounded-lg shadow-lg">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <!-- Mobile Overlay -->
+        <div id="mobileOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
+        
+        <!-- Sidebar -->
+        <div id="sidebar" class="fixed left-0 top-0 h-full w-64 gradient-bg text-white sidebar-transition z-40 md:translate-x-0 sidebar-mobile">
+            <div class="p-6">
+                <div class="flex items-center mb-8">
+                    <img src="https://img5.pic.in.th/file/secure-sv1/autoplaybet.jpeg" alt="Autoplay.bet Logo" class="w-12 h-12 rounded-lg mr-3 object-cover shadow-md">
+                    <div>
+                        <h1 class="text-xl font-bold">Autoplay.bet</h1>
+                        <p class="text-blue-200 text-sm">Admin Panel</p>
+                    </div>
+                </div>
+                
+                <nav class="space-y-2">
+                    <a href="#" onclick="showSection('customers')" class="flex items-center p-3 rounded-lg hover:bg-white hover:bg-opacity-20 transition-colors">
+                        <i class="fas fa-users mr-3"></i>ข้อมูลลูกค้า
+                    </a>
+                    <a href="#" onclick="showSection('finance')" class="flex items-center p-3 rounded-lg hover:bg-white hover:bg-opacity-20 transition-colors">
+                        <i class="fas fa-chart-line mr-3"></i>การเงิน
+                    </a>
+                    <a href="#" onclick="showSection('betting')" class="flex items-center p-3 rounded-lg hover:bg-white hover:bg-opacity-20 transition-colors">
+                        <i class="fas fa-chart-bar mr-3"></i>รายงานการเดิมพัน
+                    </a>
+                    <a href="#" onclick="showSection('promotions')" class="flex items-center p-3 rounded-lg hover:bg-white hover:bg-opacity-20 transition-colors">
+                        <i class="fas fa-gift mr-3"></i>ปรับแต่งโปรโมชั่น
+                    </a>
+                    <a href="#" onclick="showSection('theme')" class="flex items-center p-3 rounded-lg hover:bg-white hover:bg-opacity-20 transition-colors">
+                        <i class="fas fa-palette mr-3"></i>ปรับแต่งธีมระบบ
+                    </a>
+                    <a href="#" onclick="showSection('announcements')" class="flex items-center p-3 rounded-lg hover:bg-white hover:bg-opacity-20 transition-colors">
+                        <i class="fas fa-bullhorn mr-3"></i>ปรับแต่งป้ายประกาศ
+                    </a>
+                    <a href="#" onclick="showSection('wheel')" class="flex items-center p-3 rounded-lg hover:bg-white hover:bg-opacity-20 transition-colors">
+                        <i class="fas fa-dharmachakra mr-3"></i>ปรับแต่งกงล้อ
+                    </a>
+                    <a href="#" onclick="showSection('transactions')" class="flex items-center p-3 rounded-lg hover:bg-white hover:bg-opacity-20 transition-colors">
+                        <i class="fas fa-exchange-alt mr-3"></i>ปรับแต่ง ฝาก-ถอน
+                    </a>
+                    <a href="#" onclick="showSection('staff')" class="flex items-center p-3 rounded-lg hover:bg-white hover:bg-opacity-20 transition-colors">
+                        <i class="fas fa-user-tie mr-3"></i>ปรับแต่งพนักงาน
+                    </a>
+                    <a href="#" onclick="showSection('activity')" class="flex items-center p-3 rounded-lg hover:bg-white hover:bg-opacity-20 transition-colors">
+                        <i class="fas fa-clock mr-3"></i>รายงานผู้ใช้งานล่าสุด
+                    </a>
+                </nav>
+                
+                <div class="absolute bottom-6 left-6 right-6">
+                    <button onclick="logout()" class="w-full flex items-center justify-center p-3 bg-red-500 hover:bg-red-600 rounded-lg transition-colors">
+                        <i class="fas fa-sign-out-alt mr-2"></i>ออกจากระบบ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="md:ml-64 min-h-screen main-content-mobile">
+            <!-- Header -->
+            <header class="bg-white shadow-sm border-b border-gray-200 p-6 mobile-header">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1 md:flex-none ml-12 md:ml-0">
+                        <h2 id="pageTitle" class="text-xl md:text-2xl font-bold text-gray-800 mobile-text">ข้อมูลลูกค้า</h2>
+                        <p class="text-gray-600 mt-1 text-sm md:text-base hidden md:block">จัดการข้อมูลลูกค้าทั้งหมด</p>
+                    </div>
+                    <div class="flex items-center space-x-2 md:space-x-6">
+                        <!-- Real-time Clock -->
+                        <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-3 md:px-6 py-2 md:py-3 rounded-xl shadow-lg">
+                            <div class="text-center">
+                                <div id="currentDate" class="text-xs md:text-sm font-medium opacity-90"></div>
+                                <div id="currentTime" class="text-sm md:text-lg font-bold"></div>
+                            </div>
+                        </div>
+                        <div class="text-right hidden md:block">
+                            <p class="text-sm text-gray-600">ยินดีต้อนรับ</p>
+                            <p class="font-medium text-gray-800">Admin</p>
+                        </div>
+                        <div class="w-8 h-8 md:w-10 md:h-10 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                            <i class="fas fa-user text-sm md:text-base"></i>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Sections -->
+            <main class="p-3 md:p-6">
+                <!-- Customer Data Section -->
+                <div id="customersSection" class="section">
+                    <div class="bg-white rounded-xl card-shadow p-3 md:p-6 mb-3 md:mb-6 mobile-card">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6 space-y-3 md:space-y-0">
+                            <h3 class="text-lg md:text-xl font-bold text-gray-800">รายชื่อลูกค้า</h3>
+                            <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-3">
+                                <button onclick="refreshData()" class="px-3 md:px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors mobile-button">
+                                    <i class="fas fa-sync-alt mr-2"></i>รีเฟรช
+                                </button>
+                                <button onclick="downloadExcel()" class="px-3 md:px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors mobile-button">
+                                    <i class="fas fa-download mr-2"></i>ดาวน์โหลด Excel
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="overflow-x-auto mobile-table-scroll">
+                            <table class="w-full min-w-max">
+                                <thead>
+                                    <tr class="bg-gray-50">
+                                        <th class="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 whitespace-nowrap">ลำดับ</th>
+                                        <th class="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 whitespace-nowrap">ชื่อ</th>
+                                        <th class="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 whitespace-nowrap">นามสกุล</th>
+                                        <th class="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 whitespace-nowrap">ธนาคาร</th>
+                                        <th class="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 whitespace-nowrap">เลขที่บัญชี</th>
+                                        <th class="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 whitespace-nowrap">เบอร์โทร</th>
+                                        <th class="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 whitespace-nowrap">ไอดีไลน์</th>
+                                        <th class="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 whitespace-nowrap">วันที่สมัคร</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="customerTableBody">
+                                    <tr>
+                                        <td colspan="8" class="px-4 py-8 text-center text-gray-500">
+                                            <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                            <p>กำลังโหลดข้อมูล...</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div id="pagination" class="flex flex-col md:flex-row items-center justify-between mt-4 md:mt-6 pt-4 md:pt-6 border-t border-gray-200 space-y-3 md:space-y-0">
+                            <div class="text-xs md:text-sm text-gray-600 text-center md:text-left">
+                                แสดง <span id="showingFrom">0</span> - <span id="showingTo">0</span> จาก <span id="totalRecords">0</span> รายการ
+                            </div>
+                            <div class="flex space-x-2">
+                                <button id="prevBtn" onclick="changePage(-1)" class="px-2 md:px-3 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 text-sm" disabled>
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <span id="pageInfo" class="px-3 md:px-4 py-2 bg-blue-500 text-white rounded-lg text-sm">1</span>
+                                <button id="nextBtn" onclick="changePage(1)" class="px-2 md:px-3 py-2 bg-gray-200 text-gray-600 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50 text-sm" disabled>
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other Sections (Placeholder) -->
+                <div id="financeSection" class="section hidden">
+                    <div class="bg-white rounded-xl card-shadow p-3 md:p-6 mobile-card">
+                        <h3 class="text-lg md:text-xl font-bold text-gray-800 mb-4">การเงิน</h3>
+                        <p class="text-gray-600 text-sm md:text-base">ส่วนนี้อยู่ระหว่างการพัฒนา</p>
+                    </div>
+                </div>
+
+                <div id="bettingSection" class="section hidden">
+                    <div class="bg-white rounded-xl card-shadow p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">รายงานการเดิมพัน</h3>
+                        <p class="text-gray-600">ส่วนนี้อยู่ระหว่างการพัฒนา</p>
+                    </div>
+                </div>
+
+                <div id="promotionsSection" class="section hidden">
+                    <div class="bg-white rounded-xl card-shadow p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">ปรับแต่งโปรโมชั่น</h3>
+                        <p class="text-gray-600">ส่วนนี้อยู่ระหว่างการพัฒนา</p>
+                    </div>
+                </div>
+
+                <div id="themeSection" class="section hidden">
+                    <div class="bg-white rounded-xl card-shadow p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">ปรับแต่งธีมระบบ</h3>
+                        <p class="text-gray-600">ส่วนนี้อยู่ระหว่างการพัฒนา</p>
+                    </div>
+                </div>
+
+                <div id="announcementsSection" class="section hidden">
+                    <div class="bg-white rounded-xl card-shadow p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">ปรับแต่งป้ายประกาศ</h3>
+                        <p class="text-gray-600">ส่วนนี้อยู่ระหว่างการพัฒนา</p>
+                    </div>
+                </div>
+
+                <div id="wheelSection" class="section hidden">
+                    <div class="bg-white rounded-xl card-shadow p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">ปรับแต่งกงล้อ</h3>
+                        <p class="text-gray-600">ส่วนนี้อยู่ระหว่างการพัฒนา</p>
+                    </div>
+                </div>
+
+                <div id="transactionsSection" class="section hidden">
+                    <div class="bg-white rounded-xl card-shadow p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">ปรับแต่ง ฝาก-ถอน</h3>
+                        <p class="text-gray-600">ส่วนนี้อยู่ระหว่างการพัฒนา</p>
+                    </div>
+                </div>
+
+                <div id="staffSection" class="section hidden">
+                    <div class="bg-white rounded-xl card-shadow p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">ปรับแต่งพนักงาน</h3>
+                        <p class="text-gray-600">ส่วนนี้อยู่ระหว่างการพัฒนา</p>
+                    </div>
+                </div>
+
+                <div id="activitySection" class="section hidden">
+                    <div class="bg-white rounded-xl card-shadow p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">รายงานผู้ใช้งานล่าสุด</h3>
+                        <p class="text-gray-600">ส่วนนี้อยู่ระหว่างการพัฒนา</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Download Password Modal -->
+    <div id="downloadModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl p-8 w-96 card-shadow">
+            <h3 class="text-xl font-bold text-gray-800 mb-4">ยืนยันการดาวน์โหลด</h3>
+            <p class="text-gray-600 mb-6">กรุณาใส่รหัสผ่านเพื่อดาวน์โหลดข้อมูล</p>
+            <form id="downloadForm">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อผู้ใช้</label>
+                    <input type="text" id="downloadUsername" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="autoplay">
+                </div>
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
+                    <input type="password" id="downloadPassword" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="aa123456">
+                </div>
+                <div class="flex space-x-3">
+                    <button type="button" onclick="closeDownloadModal()" class="flex-1 px-4 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">ยกเลิก</button>
+                    <button type="submit" class="flex-1 px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">ดาวน์โหลด</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let customerData = [];
+        let currentPage = 1;
+        const recordsPerPage = 100;
+        
+        // Bank logos mapping
+        const bankLogos = {
+            'กสิกรไทย': 'https://img2.pic.in.th/pic/4aee824b5e4cd0a04f8e022d84fa0acf.jpeg',
+            'ออมสิน': 'https://img2.pic.in.th/pic/d3faf4592d41976f1b0355c1913cc69e.jpeg',
+            'ไทยพาณิชย์': 'https://img2.pic.in.th/pic/cf5273b977811a0178217307ea659b6f.webp',
+            'กรุงเทพ': 'https://img2.pic.in.th/pic/a837e3719e04a3c1eb802377e63020f7.png',
+            'ธกส.': 'https://img2.pic.in.th/pic/.8af7b7abc0890d7a.png',
+            'ทหารไทย': 'https://img5.pic.in.th/file/secure-sv1/cfabd4cdee6ddbd99e04a241e9557e94.jpg',
+            'กรุงไทย': 'https://img5.pic.in.th/file/secure-sv1/9e8b04a44cd7396677fb42cca1c95a13.png',
+            'กรุงศรีอยุธยา': 'https://img2.pic.in.th/pic/70cdc48b148c8feece9c5971bd00e956.jpeg'
+        };
+
+        // Mobile menu functionality
+        document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            
+            sidebar.classList.toggle('active');
+            overlay.classList.toggle('hidden');
+        });
+
+        document.getElementById('mobileOverlay').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            
+            sidebar.classList.remove('active');
+            overlay.classList.add('hidden');
+        });
+
+        // Close mobile menu when clicking sidebar links
+        document.querySelectorAll('#sidebar a').forEach(link => {
+            link.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    const sidebar = document.getElementById('sidebar');
+                    const overlay = document.getElementById('mobileOverlay');
+                    
+                    sidebar.classList.remove('active');
+                    overlay.classList.add('hidden');
+                }
+            });
+        });
+
+        // Login functionality
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username === 'autoplay01' && password === 'autoplay1234') {
+                document.getElementById('loginModal').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                startClock();
+                loadCustomerData();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เข้าสู่ระบบไม่สำเร็จ',
+                    text: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง',
+                    confirmButtonColor: '#667eea'
+                });
+            }
+        });
+
+        // Load customer data from Google Sheets
+        function loadCustomerData() {
+            Swal.fire({
+                title: 'กำลังโหลดข้อมูล...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Create JSONP callback
+            window.handleSheetData = function(data) {
+                customerData = data.slice(1); // Remove header row
+                displayCustomerData();
+                Swal.close();
+            };
+
+            // Create script element for JSONP
+            const script = document.createElement('script');
+            script.src = 'https://script.google.com/macros/s/AKfycbxdhYV0iQ9g2A1ROwWsiyWU-EiEerCugqn38hLcTJaLpVohjlpVB2NFVDagEfUZxN_oOA/exec?callback=handleSheetData';
+            script.onerror = function() {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง',
+                    confirmButtonColor: '#667eea'
+                });
+            };
+            document.head.appendChild(script);
+        }
+
+        // Format phone number to 10 digits
+        function formatPhoneNumber(phone) {
+            if (!phone) return '';
+            // Remove all non-digit characters
+            const digits = phone.toString().replace(/\D/g, '');
+            // Ensure it's 10 digits, pad with leading zeros if needed
+            return digits.padStart(10, '0');
+        }
+
+        // Format date to DD/MM/YYYY
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            
+            // Try to parse different date formats
+            let date;
+            if (dateStr.includes('/')) {
+                // Already in DD/MM/YYYY or MM/DD/YYYY format
+                const parts = dateStr.split('/');
+                if (parts.length === 3) {
+                    // Assume DD/MM/YYYY if day <= 12, otherwise MM/DD/YYYY
+                    if (parseInt(parts[0]) <= 12 && parseInt(parts[1]) > 12) {
+                        date = new Date(parts[2], parts[0] - 1, parts[1]); // MM/DD/YYYY
+                    } else {
+                        date = new Date(parts[2], parts[1] - 1, parts[0]); // DD/MM/YYYY
+                    }
+                }
+            } else if (dateStr.includes('-')) {
+                // YYYY-MM-DD format
+                date = new Date(dateStr);
+            } else {
+                // Try to parse as is
+                date = new Date(dateStr);
+            }
+            
+            if (isNaN(date.getTime())) {
+                return dateStr; // Return original if can't parse
+            }
+            
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = date.getFullYear();
+            
+            return `${day}/${month}/${year}`;
+        }
+
+        // Display customer data in table
+        function displayCustomerData() {
+            const tbody = document.getElementById('customerTableBody');
+            const startIndex = (currentPage - 1) * recordsPerPage;
+            const endIndex = Math.min(startIndex + recordsPerPage, customerData.length);
+            
+            let html = '';
+            for (let i = startIndex; i < endIndex; i++) {
+                const customer = customerData[i];
+                const bankLogo = bankLogos[customer[3]] || '';
+                const formattedPhone = formatPhoneNumber(customer[5]);
+                const formattedDate = formatDate(customer[7]);
+                
+                html += `
+                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-900 whitespace-nowrap">${customer[0]}</td>
+                        <td class="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-900 whitespace-nowrap">${customer[1]}</td>
+                        <td class="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-900 whitespace-nowrap">${customer[2]}</td>
+                        <td class="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-900 whitespace-nowrap">
+                            <div class="flex items-center">
+                                ${bankLogo ? `<img src="${bankLogo}" alt="${customer[3]}" class="bank-logo mr-1 md:mr-2">` : ''}
+                                <span class="truncate max-w-20 md:max-w-none">${customer[3]}</span>
+                            </div>
+                        </td>
+                        <td class="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-900 font-mono whitespace-nowrap">${customer[4]}</td>
+                        <td class="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-900 font-mono whitespace-nowrap">${formattedPhone}</td>
+                        <td class="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-900 whitespace-nowrap">${customer[6]}</td>
+                        <td class="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm text-gray-900 font-mono whitespace-nowrap">${formattedDate}</td>
+                    </tr>
+                `;
+            }
+            
+            tbody.innerHTML = html;
+            updatePagination();
+        }
+
+        // Update pagination
+        function updatePagination() {
+            const totalPages = Math.ceil(customerData.length / recordsPerPage);
+            const startIndex = (currentPage - 1) * recordsPerPage + 1;
+            const endIndex = Math.min(currentPage * recordsPerPage, customerData.length);
+            
+            document.getElementById('showingFrom').textContent = startIndex;
+            document.getElementById('showingTo').textContent = endIndex;
+            document.getElementById('totalRecords').textContent = customerData.length;
+            document.getElementById('pageInfo').textContent = `${currentPage} / ${totalPages}`;
+            
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+        }
+
+        // Change page
+        function changePage(direction) {
+            const totalPages = Math.ceil(customerData.length / recordsPerPage);
+            const newPage = currentPage + direction;
+            
+            if (newPage >= 1 && newPage <= totalPages) {
+                currentPage = newPage;
+                displayCustomerData();
+            }
+        }
+
+        // Refresh data
+        function refreshData() {
+            loadCustomerData();
+        }
+
+        // Show section
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + 'Section').classList.remove('hidden');
+            
+            // Update page title
+            const titles = {
+                'customers': 'ข้อมูลลูกค้า',
+                'finance': 'การเงิน',
+                'betting': 'รายงานการเดิมพัน',
+                'promotions': 'ปรับแต่งโปรโมชั่น',
+                'theme': 'ปรับแต่งธีมระบบ',
+                'announcements': 'ปรับแต่งป้ายประกาศ',
+                'wheel': 'ปรับแต่งกงล้อ',
+                'transactions': 'ปรับแต่ง ฝาก-ถอน',
+                'staff': 'ปรับแต่งพนักงาน',
+                'activity': 'รายงานผู้ใช้งานล่าสุด'
+            };
+            
+            document.getElementById('pageTitle').textContent = titles[sectionName];
+        }
+
+        // Download Excel
+        function downloadExcel() {
+            document.getElementById('downloadModal').classList.remove('hidden');
+        }
+
+        // Close download modal
+        function closeDownloadModal() {
+            document.getElementById('downloadModal').classList.add('hidden');
+            document.getElementById('downloadForm').reset();
+        }
+
+        // Handle download form with modern animation
+        document.getElementById('downloadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('downloadUsername').value;
+            const password = document.getElementById('downloadPassword').value;
+            
+            if (username === 'autoplay' && password === 'aa123456') {
+                closeDownloadModal();
+                showModernDownloadProgress();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'รหัสผ่านไม่ถูกต้อง',
+                    text: 'กรุณาใส่ชื่อผู้ใช้และรหัสผ่านที่ถูกต้อง',
+                    confirmButtonColor: '#667eea'
+                });
+            }
+        });
+
+        // Modern download progress animation
+        function showModernDownloadProgress() {
+            Swal.fire({
+                title: 'กำลังเตรียมข้อมูล...',
+                html: `
+                    <div class="flex flex-col items-center space-y-4">
+                        <div class="relative">
+                            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center pulse-ring"></div>
+                            <div class="absolute inset-0 w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center download-icon">
+                                <i class="fas fa-download text-white text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="w-64 bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div id="downloadProgressBar" class="progress-bar"></div>
+                        </div>
+                        <p id="downloadStatus" class="text-sm text-gray-600">กำลังประมวลผลข้อมูล...</p>
+                    </div>
+                `,
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                customClass: {
+                    popup: 'rounded-2xl'
+                }
+            });
+
+            // Simulate download progress
+            let progress = 0;
+            const progressBar = document.getElementById('downloadProgressBar');
+            const statusText = document.getElementById('downloadStatus');
+            
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 15 + 5;
+                if (progress > 100) progress = 100;
+                
+                progressBar.style.width = progress + '%';
+                
+                if (progress < 30) {
+                    statusText.textContent = 'กำลังรวบรวมข้อมูลลูกค้า...';
+                } else if (progress < 60) {
+                    statusText.textContent = 'กำลังจัดรูปแบบข้อมูล...';
+                } else if (progress < 90) {
+                    statusText.textContent = 'กำลังสร้างไฟล์ Excel...';
+                } else {
+                    statusText.textContent = 'เกือบเสร็จแล้ว...';
+                }
+                
+                if (progress >= 100) {
+                    clearInterval(progressInterval);
+                    
+                    // Show completion animation
+                    setTimeout(() => {
+                        Swal.fire({
+                            html: `
+                                <div class="flex flex-col items-center space-y-4">
+                                    <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
+                                        <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center success-checkmark">
+                                            <i class="fas fa-check text-white text-2xl"></i>
+                                        </div>
+                                    </div>
+                                    <h3 class="text-xl font-bold text-green-600">ดาวน์โหลดสำเร็จ!</h3>
+                                    <p class="text-gray-600">ไฟล์ข้อมูลลูกค้าถูกบันทึกแล้ว</p>
+                                    <div class="flex items-center space-x-2 text-sm text-gray-500">
+                                        <i class="fas fa-file-excel text-green-500"></i>
+                                        <span>customer_data_clean.csv</span>
+                                    </div>
+                                </div>
+                            `,
+                            showConfirmButton: true,
+                            confirmButtonText: 'เรียบร้อย',
+                            confirmButtonColor: '#4CAF50',
+                            customClass: {
+                                popup: 'rounded-2xl'
+                            }
+                        });
+                        
+                        // Actually download the file
+                        downloadFile();
+                    }, 500);
+                }
+            }, 200);
+        }
+
+        // Actual file download function
+        function downloadFile() {
+            const headers = ['ลำดับ', 'ชื่อ', 'นามสกุล', 'ธนาคาร', 'เลขที่บัญชี', 'เบอร์โทร', 'ไอดีไลน์', 'วันที่สมัคร'];
+            let csvContent = headers.join(',') + '\n';
+            
+            customerData.forEach(row => {
+                // Clean data - remove any watermarks or unwanted text
+                const cleanRow = row.map(cell => {
+                    if (typeof cell === 'string') {
+                        return cell.replace(/autoplay/gi, '').replace(/watermark/gi, '').trim();
+                    }
+                    return cell;
+                });
+                csvContent += cleanRow.join(',') + '\n';
+            });
+            
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'customer_data_clean.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Real-time clock function
+        function updateClock() {
+            const now = new Date();
+            
+            // Thai months
+            const thaiMonths = [
+                'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+            ];
+            
+            // Thai days
+            const thaiDays = [
+                'อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'
+            ];
+            
+            // Format date
+            const day = thaiDays[now.getDay()];
+            const date = now.getDate();
+            const month = thaiMonths[now.getMonth()];
+            const year = now.getFullYear() + 543; // Convert to Buddhist Era
+            
+            // Format time
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            
+            // Update display
+            document.getElementById('currentDate').textContent = `วัน${day} ${date} ${month} ${year}`;
+            document.getElementById('currentTime').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
+        // Start clock when dashboard is shown
+        let clockInterval;
+        function startClock() {
+            updateClock();
+            clockInterval = setInterval(updateClock, 1000);
+        }
+
+        function stopClock() {
+            if (clockInterval) {
+                clearInterval(clockInterval);
+            }
+        }
+
+        // Logout
+        function logout() {
+            Swal.fire({
+                title: 'ออกจากระบบ?',
+                text: 'คุณต้องการออกจากระบบหรือไม่?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#667eea',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'ออกจากระบบ',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    stopClock();
+                    document.getElementById('dashboard').classList.add('hidden');
+                    document.getElementById('loginModal').classList.remove('hidden');
+                    document.getElementById('loginForm').reset();
+                }
+            });
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9805644391921d33',t:'MTc1ODA3ODQyOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
